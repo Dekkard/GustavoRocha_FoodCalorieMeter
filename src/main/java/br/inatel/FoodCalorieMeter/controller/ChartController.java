@@ -3,6 +3,7 @@ package br.inatel.FoodCalorieMeter.controller;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,8 @@ import io.swagger.annotations.ApiResponses;
  * Classe controladora de tabelas de alimentos, usado para criar, visualizar e
  * gerênciar as tabelas.
  */
-@ApiImplicitParams(value = { @ApiImplicitParam(name = "Authorization", paramType = "Header", required = true, example = "Bearer jwt.token.example") })
+@ApiImplicitParams(value = {
+		@ApiImplicitParam(name = "Authorization", paramType = "Header", required = true, example = "Bearer jwt.token.example") })
 @RestController
 @RequestMapping("/chart")
 public class ChartController {
@@ -65,11 +67,10 @@ public class ChartController {
 	 *                especificado todas as tabelas do usuário serão mostradas
 	 * @param auth    String que representa o token passado no cabeçalho da
 	 *                requisição
-	 *                
+	 * 
 	 * @Return Entidade de resposta contendo o <i>status</i> de retorno
 	 */
-	@ApiResponses(value = {
-			@ApiResponse(code = 200, message = "Ok", response = ChartDTO.class), //
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Ok", response = ChartDTO.class), //
 			@ApiResponse(code = 204, message = "No Content: Empty list."),
 			@ApiResponse(code = 401, message = "Unauthorized: Login failed."),
 			@ApiResponse(code = 400, message = "Bad Request: Null value detect, probably at: ... Contact the System Administrator."),
@@ -78,35 +79,36 @@ public class ChartController {
 	@GetMapping /* ("/chart") */
 	public ResponseEntity<?> getFood(@RequestParam(name = "id", defaultValue = "0") Long chartId,
 			@RequestHeader("Authorization") String auth) {
-		Long clientId = ts.getClientUserId(auth.substring(7));
-		Optional<Client> clientOpt = cs.find(clientId);
-		if (clientOpt.isPresent()) {
+		Long clientId = ts.getClientUserId(auth.substring(7)); //Extrai id
+		Optional<Client> clientOpt = cs.find(clientId); // Encontra cliente
+		if (clientOpt.isPresent()) { //Verifica se há cliente
 			try {
-				if (!chartId.equals(0L)) {
-					Optional<Chart> chartOpt = chs.findByClient(chartId, clientOpt.get());
-					if (chartOpt.isPresent()) {
-						ChartDTO chartDTO = ChartTransform.ModelToData(chartOpt.get(), fdcs);
-						return new ResponseEntity<>(chartDTO, HttpStatus.OK);
+				if (!chartId.equals(0L)) { //Verifica parâmetro
+					Optional<Chart> chartOpt = chs.findByClient(chartId, clientOpt.get()); // procura pelo id passado
+					if (chartOpt.isPresent()) { //Verifica se está presente
+						ChartDTO chartDTO = ChartTransform.ModelToData(chartOpt.get(), fdcs); //Transforma em DTO
+						return new ResponseEntity<>(chartDTO, HttpStatus.OK); //Envia status OK
 					}
-					return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+					return new ResponseEntity<>(HttpStatus.NOT_FOUND); //Not found caso não encontre
 				} else {
-					List<Chart> listByClient = chs.listByClient(clientOpt.get());
-					List<ChartDTO> listChartDTO = listByClient.stream().map(c -> ChartTransform.ModelToData(c, fdcs))
+					List<Chart> listByClient = chs.listByClient(clientOpt.get());//realiza busca da listas do cliente
+					List<ChartDTO> listChartDTO = listByClient.stream() //transforma em DTO
+							.map(c -> ChartTransform.ModelToData(c, fdcs)) //
 							.collect(Collectors.toList());
-					if(!listChartDTO.isEmpty())
-						return new ResponseEntity<>(listChartDTO, HttpStatus.OK);
-					return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+					if (!listChartDTO.isEmpty()) //Verifica se está vazio
+						return new ResponseEntity<>(listChartDTO, HttpStatus.OK); //status ok se há elementos
+					return new ResponseEntity<>(HttpStatus.NO_CONTENT);//Caso contrário, está vazio
 				}
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				return new Message<>(HttpStatus.BAD_REQUEST, "Null value detected, probably at: "
-						+ e.getStackTrace()[0].toString() + ". Contact the System Administrator.");
+						+ e.getStackTrace()[0].toString() + ". Contact the System Administrator."); //Caso haja valor nulo
 			} catch (Exception e) {
 				e.printStackTrace();
-				return new Message<>(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage());
+				return new Message<>(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage()); //Exceções em geral
 			}
 		}
-		return new Message<>(HttpStatus.UNAUTHORIZED, "Login failed.");
+		return new Message<>(HttpStatus.UNAUTHORIZED, "Login failed."); //Caso não haja cliente
 	}
 
 	/**
@@ -117,13 +119,13 @@ public class ChartController {
 	 *                  especificado será criado uma tabela nova
 	 * @param auth      String que representa o token passado no cabeçalho da
 	 *                  requisição
-	 *                
+	 * 
 	 * @Return Entidade de resposta contendo o <i>status</i> de retorno
 	 */
-	@ApiResponses(value = {
-			@ApiResponse(code = 200, message = "Created", response = ChartDTO.class), //
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Created", response = ChartDTO.class), //
 			@ApiResponse(code = 401, message = "Unauthorized: Login failed."),
 			@ApiResponse(code = 400, message = "Bad Request: Null value detect, probably at: ... Contact the System Administrator."),
+			@ApiResponse(code = 404, message = "Not Found"),
 			@ApiResponse(code = 500, message = "Internal Server Error: Exception Specialized Message.") })
 	@PostMapping /* ("/chart") */
 	@Transactional
@@ -131,52 +133,56 @@ public class ChartController {
 			@RequestParam(name = "id", defaultValue = "0") Long chartId, @RequestHeader("Authorization") String auth) {
 		Long clientId = ts.getClientUserId(auth.substring(7)); // Extrai token
 		Optional<Client> clientOpt = cs.find(clientId); // Encontra client
-		if (clientOpt.isPresent()) {
+		if (clientOpt.isPresent()) { // Verifica se o cliente está presente
 			try {
-				Chart chart;
-				if (!chartId.equals(0L)) {
-					Optional<Chart> find = chs.findByClient(chartId, clientOpt.get());
-					if (find.isPresent()) {
-						chart = find.get();
+				Chart chart; // Declaração da tabela
+				if (!chartId.equals(0L)) { // Se o id foi passado por parâmetro
+					Optional<Chart> chartOpt = chs.findByClient(chartId, clientOpt.get()); // tenta encontrar a tabela
+																							// pelo seu id, verificando
+																							// se o cliente é seu dono
+					if (chartOpt.isPresent()) { // Verifica se está presente
+						chart = chartOpt.get(); // Recupare-se valor
 					} else
-						throw new Exception();
+						throw new NoSuchElementException("Chart not found"); // Lança-se caso contrário
 				} else
-					chart = new Chart();
+					chart = new Chart(); // Novo Objeto
 
-				chart.setName(chartInfo.getName());
-				chart.setClient(clientOpt.get());
-				chs.persist(chart);
+				chart.setName(chartInfo.getName()); // Set Nome
+				chart.setClient(clientOpt.get()); // Set Cliente
+				chs.persist(chart);// Persistir tabela (seu id será usado)
 
-				chartInfo.getList().entrySet().stream().forEach(word -> {
-					String wTranslated = mms.getFromList(word.getKey(), "pt-br", "en-us");
-					SearchResult sr = fdcs.postFDCFoodSearch(wTranslated, 1, 1);
+				chartInfo.getList().entrySet().stream().forEach(word -> { // Para cada alimento da lista
+					String wTranslated = mms.getFromList(word.getKey(), "pt-br", "en-us"); // Realiza tradução
+					SearchResult sr = fdcs.postFDCFoodSearch(wTranslated, 1, 1); // Busca item traduzido no banco
+					
+					Arrays.stream(sr.getSearchResultFood()).forEach(sf -> { // Para cada item do resultado (será somente 1, mas o formato é de lista)
+						ns.updateFood(chart, sf.getFdcId(), word.getValue()); // Atualiza os nutrientes no bando de  dados
+						Arrays.stream(sf.getFoodNutrients()).forEach(n -> { // para cada nutriente da alimentação
 
-					Arrays.stream(sr.getSearchResultFood()) //
-							.forEach(sf -> {
-								ns.updateFood(chart, sf.getFdcId(), word.getValue());
-
-								Arrays.stream(sf.getFoodNutrients()) //
-										.forEach(n -> {
-											Nutrient nutrient = Nutrient.builder()//
-													.id(n.getNutrientId())//
-													.name(n.getNutrientName())//
-													.unit(n.getUnitName()).build();
-											ns.updateChartNutrient(nutrient, chart, BigDecimal.valueOf(n.getAmount())
-													.multiply(new BigDecimal(word.getValue())));
-										});
-							});
+							Nutrient nutrient = Nutrient.builder()// constrói objeto nutriente
+									.id(n.getNutrientId())//
+									.name(n.getNutrientName())//
+									.unit(n.getUnitName()).build();
+							// Atualiza a relação entre a tabela e os nutrientes
+							ns.updateChartNutrient(nutrient, chart,
+									BigDecimal.valueOf(n.getAmount()).multiply(new BigDecimal(word.getValue()))); 
+						});
+					});
 				});
-				chs.update(chart.getId(), chart);
-				return new ResponseEntity<>(ChartTransform.ModelToData(chart, fdcs), HttpStatus.CREATED);
+				chs.update(chart.getId(), chart); //Atualiza a tabela
+				return new ResponseEntity<>(ChartTransform.ModelToData(chart, fdcs), HttpStatus.CREATED); //Envia se ocorrer tudo corremente
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				return new Message<>(HttpStatus.BAD_REQUEST, "Null value detected, probably at: "
-						+ e.getStackTrace()[0].toString() + ". Contact the System Administrator.");
+						+ e.getStackTrace()[0].toString() + ". Contact the System Administrator."); //Objeto nulo detectado
+			} catch (NoSuchElementException e) {
+				e.printStackTrace();
+				return new Message<>(HttpStatus.NOT_FOUND, e.getLocalizedMessage()); //Elemento não encontrado
 			} catch (Exception e) {
 				e.printStackTrace();
-				return new Message<>(HttpStatus.INTERNAL_SERVER_ERROR, e.getCause().getLocalizedMessage());
+				return new Message<>(HttpStatus.INTERNAL_SERVER_ERROR, e.getCause().getLocalizedMessage()); //Exceções em geral
 			}
 		}
-		return new Message<>(HttpStatus.UNAUTHORIZED, "Login failed.");
+		return new Message<>(HttpStatus.UNAUTHORIZED, "Login failed."); //Caso não haja cliente
 	}
 }
