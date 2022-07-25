@@ -1,0 +1,1 @@
+memberSearchIndex = [{"p":"br.inatel.FoodCalorieMeter","c":"FoodCalorieMeterApplication","l":"FoodCalorieMeterApplication()","url":"%3Cinit%3E()"},{"p":"br.inatel.FoodCalorieMeter","c":"FoodCalorieMeterApplication","l":"main(String[])","url":"main(java.lang.String[])"}]

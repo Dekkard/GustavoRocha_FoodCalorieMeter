@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+   fcm:
+      build: .
+      image: foodcaloriemeter:1.0
+      container_name: fcm
+      environment:
+         - FDC_KEY=
+         - FDC_URL=
+         - JWT_CKEY=
+         - MM_KEY=
+         - DB_USER=
+         - DB_PASS=
+         - DB_HOST=
+         - HOST=
+         - PORT=
+         - SPRING_PROFILES_ACTIVE=prod
+      ports:
+         - 9682:9682
+      networks:
+         - connection1
+      depends_on:
+         mysql
+
+   mysql:
+      image: mysql:8
+      container_name: mysql
+      environment:
+         - MYSQL_ROOT_PASSWORD=root
+         - MYSQL_DATABASE=fcmdb
+      ports:
+         - 3306:3306
+         - 33060:33060
+      networks:
+         - connection1
+      
+networks:
+    connection1:
+        driver: bridge
