@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 src/main/java/br/inatel/FoodCalorieMeter/service/ServiceModel.java
 src/main/java/br/inatel/FoodCalorieMeter/model/DataTransform/ModelTransform.java
-docker-compose.yml
+compose.yml
 
 ### STS ###
 .apt_generated

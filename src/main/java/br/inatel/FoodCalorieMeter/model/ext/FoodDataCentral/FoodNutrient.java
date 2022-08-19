@@ -20,6 +20,7 @@ public @Data class FoodNutrient {
 	private String derivationCode;
 	private String derivationDescription;
 	private Integer derivationId;
+	@JsonAlias("value")
 	private Double amount;
 	private Integer foodNutrientSourceId;
 	private String foodNutrientSourceCode;

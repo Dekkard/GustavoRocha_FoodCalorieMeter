@@ -2,12 +2,14 @@ package br.inatel.FoodCalorieMeter.controller;
 
 import java.util.Optional;
 
+import javax.persistence.EntityExistsException;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -83,7 +85,7 @@ public class AuthorizationController {
 	 * 
 	 * @param userClient objeto contendo informações para registro de cliente, assim
 	 *                   como a criação do objeto usuário
-	 *                   
+	 * 
 	 * @Return Entidade de resposta contendo o <i>status</i> de retorno
 	 */
 	@ApiResponses(value = { @ApiResponse(code = 201, message = "Created: Client registered"), //
@@ -93,6 +95,10 @@ public class AuthorizationController {
 	@PostMapping("/client/registry")
 	public ResponseEntity<?> createClient(@RequestBody @Valid UserClient userClient) {
 		try {
+			if(us.findByEmail(userClient.getEmail()).isPresent())
+				throw new EntityExistsException("E-mail already registered");
+			if(userClient.getPassword().length()<6)
+				throw new BadCredentialsException("Password must have at least 6 characters");
 			Optional<Client> clientOpt = cs.insert(userClient.getClientInfo());
 			if (clientOpt.isPresent()) {
 				Optional<RegistryUser> userOpt = us.insert(userClient.getUserInfo(clientOpt.get().getId()));
@@ -104,6 +110,10 @@ public class AuthorizationController {
 			e.printStackTrace();
 			return new Message<>(HttpStatus.BAD_REQUEST, "Null value detected, probably at: "
 					+ e.getStackTrace()[0].toString() + ". Contact the System Administrator.");
+		} catch (EntityExistsException e) {
+			return new Message<>(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
+		} catch (BadCredentialsException e) {
+			return new Message<>(HttpStatus.BAD_REQUEST, e.getLocalizedMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new Message<>(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage());

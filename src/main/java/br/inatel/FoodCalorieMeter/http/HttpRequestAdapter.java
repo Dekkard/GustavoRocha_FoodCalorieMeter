@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class HttpRequestAdapter {
 
 	private HttpClient httpClient;
+	private ObjectMapper objectMapper;
 
 	/**
 	 * Instancia-se a classe definindo a versão do protocolo, algumas APIs aceitam somente a versão 1.1
@@ -49,7 +50,7 @@ public class HttpRequestAdapter {
 	 * */
 	public <E> E getRequest(String uri, Class<E> returnClass, String... parameters) {
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper = new ObjectMapper();
 			return objectMapper.readValue(getResponseReturn(uri, parameters), returnClass);
 		} catch (URISyntaxException | IOException | InterruptedException e) {
 			e.printStackTrace();

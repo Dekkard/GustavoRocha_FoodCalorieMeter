@@ -4,7 +4,7 @@ Projeto de escopo aberto para a avaliação técnica 2
 Projeto que se empenha em realizar cálculo de nutrientes baseados em uma lista de alimentos e suas quantidades.
 
 ### Execução
-Para realizar a execução do projeto, basta preencher os dados do docker-compose.yml, com as chaves e urls necessárias para a execução do projeto. Dependente apenas do container MySQL. Primeiramente deve-se obter o package, para tal, execute o script fcmpack.bat, ou o .sh (necessita de testes).
+Para realizar a execução do projeto, basta preencher os dados do compose-default.yml, com as chaves e urls necessárias para a execução do projeto. Dependente apenas do container MySQL.
 	
 	- JWT_CKEY: Chave secreta do JWT
 	- FDC_KEY: Chave do FDC
